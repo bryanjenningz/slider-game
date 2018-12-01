@@ -16,9 +16,98 @@ body {
   flex-direction: column;
   justify-content: space-between;
   align-items: stretch;
+  padding: 50px 20px 20px;
+  overflow: hidden;
 }
 
-.slider {
-  width: 80%;
+.top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 50px;
+  background-color: #3f51b5;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 25px;
+}
+
+.top-bar > div {
+  flex: 1;
+}
+
+.target-info {
+  position: relative;
+  top: 35px;
+}
+
+.slider__container {
+  width: 100%;
+  height: 50px;
+  background-color: #ccc;
+  position: relative;
+}
+
+.slider__point {
+  width: 50px;
+  height: 50px;
+  background-color: #3f51b5;
+  position: absolute;
+  top: 0;
+  cursor: pointer;
+}
+
+.show-results__button {
+  width: 100%;
+  height: 50px;
+  background-color: #3f51b5;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup__background {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #000000aa;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup__container {
+  background-color: white;
+  z-index: 1;
+  padding: 20px;
+}
+
+.popup__container > div {
+  margin: 20px 0;
+}
+
+.popup__button-container {
+  display: flex;
+}
+
+.popup__ok-button, .popup__cry-button {
+  flex: 1;
+  background-color: #3f51b5;
+  color: white;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.popup__cry-button {
+  background-color: red;
+  margin-left: 20px;
 }

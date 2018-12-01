@@ -2,8 +2,8 @@ port module Main exposing (main)
 
 import Browser
 import Html exposing (Attribute, Html, button, div, input, text)
-import Html.Attributes exposing (class, type_, value)
-import Html.Events exposing (on, onClick)
+import Html.Attributes exposing (class, style, type_, value)
+import Html.Events exposing (onClick, onMouseDown, onMouseLeave, onMouseOver, onMouseUp)
 import Json.Decode as Decode exposing (Decoder)
 import Random
 
@@ -25,18 +25,20 @@ type alias Model =
     , closenessHistory : List Closeness
     , level : Int
     , popup : Popup
+    , isSliderMouseDown : Bool
     }
 
 
 init : ( Model, Cmd Msg )
 init =
     ( { slider = 50
-      , target = 0
+      , target = 1
       , score = 0
       , orangeTokens = 0
       , closenessHistory = []
       , level = 1
       , popup = NotShown
+      , isSliderMouseDown = False
       }
     , generateRandomTarget
     )
@@ -78,7 +80,7 @@ playClosenessSound closeness =
 
 generateRandomTarget : Cmd Msg
 generateRandomTarget =
-    Random.generate SetTarget (Random.int 0 100)
+    Random.generate SetTarget (Random.int 1 100)
 
 
 sliderValueDecoder : Decoder Int
@@ -87,18 +89,15 @@ sliderValueDecoder =
         |> Decode.map (String.toInt >> Maybe.withDefault 0)
 
 
-onChange : (Int -> msg) -> Attribute msg
-onChange toMsg =
-    on "change" (Decode.map toMsg sliderValueDecoder)
-
-
 
 ---- UPDATE ----
 
 
 type Msg
     = SetTarget Int
-    | SetSlider Int
+    | MouseDownSlider
+    | MouseUpSlider
+    | MouseMoveSlider Int
     | ShowResults
     | NextLevel
     | Cry
@@ -120,8 +119,18 @@ update msg model =
         SetTarget target ->
             ( { model | target = target }, Cmd.none )
 
-        SetSlider slider ->
-            ( { model | slider = slider }, Cmd.none )
+        MouseDownSlider ->
+            ( { model | isSliderMouseDown = True }, Cmd.none )
+
+        MouseUpSlider ->
+            ( { model | isSliderMouseDown = False }, Cmd.none )
+
+        MouseMoveSlider slider ->
+            if model.isSliderMouseDown then
+                ( { model | slider = slider }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
 
         ShowResults ->
             let
@@ -194,89 +203,99 @@ getPointsAndCloseness model =
     { points = points, closeness = closeness }
 
 
+viewSlider : Int -> Html Msg
+viewSlider slider =
+    div [ class "slider__container" ]
+        [ div
+            [ class "slider__point"
+            , style "left" (String.fromInt (slider - 1) ++ "%")
+            , onMouseDown MouseDownSlider
+            , onMouseUp MouseUpSlider
+            , onMouseLeave MouseUpSlider
+            ]
+            []
+        ]
+
+
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
-        [ div []
-            [ div [] [ text ("Slider: " ++ String.fromInt model.slider) ]
-            , div [] [ text ("Target: " ++ String.fromInt model.target) ]
+        [ div [ class "top-bar" ]
+            [ div [] [ text ("Level: " ++ String.fromInt model.level) ]
             , div [] [ text ("Score: " ++ String.fromInt model.score) ]
-            , div [] [ text ("Orange tokens: " ++ String.fromInt model.orangeTokens) ]
-            , div [] [ text ("Level: " ++ String.fromInt model.level) ]
+            , div [] [ text ("Oranges: " ++ String.fromInt model.orangeTokens) ]
             ]
-        , div []
-            [ input
-                [ type_ "range"
-                , onChange SetSlider
-                , class "slider"
-                , value (String.fromInt model.slider)
-                ]
-                []
-            ]
+        , div [ class "target-info" ] [ text ("Target: " ++ String.fromInt model.target) ]
+        , viewSlider model.slider
+        , div [ onClick ShowResults, class "show-results__button" ] [ text "GO!" ]
         , case model.popup of
             NotShown ->
-                button [ onClick ShowResults ] [ text "GO!" ]
+                text ""
 
             Shown ->
                 let
                     { points, closeness } =
                         getPointsAndCloseness model
                 in
-                div []
-                    [ div []
-                        [ text <|
-                            case closeness of
-                                TriplePerfect ->
-                                    "TRIPLE PERFECT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                div [ class "popup__background" ]
+                    [ div [ class "popup__container" ]
+                        [ div []
+                            [ text <|
+                                case closeness of
+                                    TriplePerfect ->
+                                        "TRIPLE PERFECT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
-                                DoublePerfect ->
-                                    "Double perfect!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                                    DoublePerfect ->
+                                        "Double perfect!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 
-                                Perfect ->
-                                    "Perfect!!!!!!1one"
+                                    Perfect ->
+                                        "Perfect!!!!!!1one"
 
-                                SuperClose ->
-                                    "SUPER CLOSE"
+                                    SuperClose ->
+                                        "SUPER CLOSE"
 
-                                Close ->
-                                    "Close but no orange"
+                                    Close ->
+                                        "Close but no orange"
 
-                                Far ->
-                                    "Not even close..."
+                                    Far ->
+                                        "Not even close..."
 
-                                SuperFar ->
-                                    "Are you even trying?"
+                                    SuperFar ->
+                                        "Are you even trying?"
+                            ]
+                        , div []
+                            [ text <|
+                                case closeness of
+                                    TriplePerfect ->
+                                        "You get " ++ String.fromInt points ++ " points! You also get an orange token!!!!!!"
+
+                                    DoublePerfect ->
+                                        "You get " ++ String.fromInt points ++ " points. If you get one more perfect in a row, you get an orange token!"
+
+                                    Perfect ->
+                                        "You get " ++ String.fromInt points ++ " points and you can now sleep at night knowing you're perfect."
+
+                                    SuperClose ->
+                                        "You get " ++ String.fromInt points ++ " points."
+
+                                    Close ->
+                                        "You get a measly " ++ String.fromInt points ++ " points."
+
+                                    Far ->
+                                        "I'll give you 1 point because I'm nice. You don't even have 2 points to rub together... So sad."
+
+                                    SuperFar ->
+                                        "You're so far away that I'm giving you 0 points and I'm going to force you to take a 10 minute break."
+                            ]
+                        , div [ class "popup__button-container" ]
+                            [ div [ onClick NextLevel, class "popup__ok-button" ] [ text "OK" ]
+                            , if closeness == Far || closeness == SuperFar then
+                                div [ onClick Cry, class "popup__cry-button" ] [ text "Cry" ]
+
+                              else
+                                text ""
+                            ]
                         ]
-                    , div []
-                        [ text <|
-                            case closeness of
-                                TriplePerfect ->
-                                    "You get " ++ String.fromInt points ++ " points! You also get an orange token!!!!!!"
-
-                                DoublePerfect ->
-                                    "You get " ++ String.fromInt points ++ " points. If you get one more perfect in a row, you get an orange token!"
-
-                                Perfect ->
-                                    "You get " ++ String.fromInt points ++ " points and you can now sleep at night knowing you're perfect."
-
-                                SuperClose ->
-                                    "You get " ++ String.fromInt points ++ " points."
-
-                                Close ->
-                                    "You get a measly " ++ String.fromInt points ++ " points."
-
-                                Far ->
-                                    "I'll give you 1 point because I'm nice. You don't even have 2 points to rub together... So sad."
-
-                                SuperFar ->
-                                    "You're so far away that I'm giving you 0 points and I'm going to force you to take a 10 minute break."
-                        ]
-                    , button [ onClick NextLevel ] [ text "OK" ]
-                    , if closeness == Far || closeness == SuperFar then
-                        button [ onClick Cry ] [ text "Cry" ]
-
-                      else
-                        text ""
                     ]
         ]
 
