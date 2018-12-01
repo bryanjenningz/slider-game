@@ -2,7 +2,7 @@ port module Main exposing (main)
 
 import Browser
 import Html exposing (Attribute, Html, button, div, input, text)
-import Html.Attributes exposing (style, type_)
+import Html.Attributes exposing (class, type_, value)
 import Html.Events exposing (on, onClick)
 import Json.Decode as Decode exposing (Decoder)
 import Random
@@ -136,7 +136,8 @@ update msg model =
                     getPointsAndCloseness model
             in
             ( { model
-                | level = model.level + 1
+                | slider = 50
+                , level = model.level + 1
                 , popup = NotShown
                 , score = model.score + points
                 , orangeTokens =
@@ -195,19 +196,23 @@ getPointsAndCloseness model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ input
-            [ type_ "range"
-            , onChange SetSlider
-            , style "width" "80%"
-            , style "height" "50px"
+    div [ class "container" ]
+        [ div []
+            [ div [] [ text ("Slider: " ++ String.fromInt model.slider) ]
+            , div [] [ text ("Target: " ++ String.fromInt model.target) ]
+            , div [] [ text ("Score: " ++ String.fromInt model.score) ]
+            , div [] [ text ("Orange tokens: " ++ String.fromInt model.orangeTokens) ]
+            , div [] [ text ("Level: " ++ String.fromInt model.level) ]
             ]
-            []
-        , div [] [ text ("Slider: " ++ String.fromInt model.slider) ]
-        , div [] [ text ("Target: " ++ String.fromInt model.target) ]
-        , div [] [ text ("Score: " ++ String.fromInt model.score) ]
-        , div [] [ text ("Orange tokens: " ++ String.fromInt model.orangeTokens) ]
-        , div [] [ text ("Level: " ++ String.fromInt model.level) ]
+        , div []
+            [ input
+                [ type_ "range"
+                , onChange SetSlider
+                , class "slider"
+                , value (String.fromInt model.slider)
+                ]
+                []
+            ]
         , case model.popup of
             NotShown ->
                 button [ onClick ShowResults ] [ text "GO!" ]
