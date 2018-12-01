@@ -50,6 +50,12 @@ playClosenessSound closeness =
     let
         soundFile =
             (case closeness of
+                TriplePerfect ->
+                    "triple-perfect"
+
+                DoublePerfect ->
+                    "double-perfect"
+
                 Perfect ->
                     "perfect"
 
@@ -99,7 +105,9 @@ type Msg
 
 
 type Closeness
-    = Perfect
+    = TriplePerfect
+    | DoublePerfect
+    | Perfect
     | SuperClose
     | Close
     | Far
@@ -134,12 +142,13 @@ update msg model =
                 , orangeTokens =
                     model.orangeTokens
                         + (case closeness of
-                            Perfect ->
+                            TriplePerfect ->
                                 1
 
                             _ ->
                                 0
                           )
+                , closenessHistory = closeness :: model.closenessHistory
               }
             , generateRandomTarget
             )
@@ -159,7 +168,15 @@ getPointsAndCloseness model =
 
         ( points, closeness ) =
             if sliderDifference == 0 then
-                ( 200, Perfect )
+                case model.closenessHistory of
+                    DoublePerfect :: _ ->
+                        ( 1000, TriplePerfect )
+
+                    Perfect :: _ ->
+                        ( 400, DoublePerfect )
+
+                    _ ->
+                        ( 200, Perfect )
 
             else if sliderDifference <= 2 then
                 ( 100, SuperClose )
@@ -204,6 +221,12 @@ view model =
                     [ div []
                         [ text <|
                             case closeness of
+                                TriplePerfect ->
+                                    "TRIPLE PERFECT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+
+                                DoublePerfect ->
+                                    "Double perfect!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+
                                 Perfect ->
                                     "Perfect!!!!!!1one"
 
@@ -222,8 +245,14 @@ view model =
                     , div []
                         [ text <|
                             case closeness of
+                                TriplePerfect ->
+                                    "You get " ++ String.fromInt points ++ " points! You also get an orange token!!!!!!"
+
+                                DoublePerfect ->
+                                    "You get " ++ String.fromInt points ++ " points. If you get one more perfect in a row, you get an orange token!"
+
                                 Perfect ->
-                                    "You get " ++ String.fromInt points ++ " points and you can now sleep at night knowing you're perfect. You get 1 orange token!"
+                                    "You get " ++ String.fromInt points ++ " points and you can now sleep at night knowing you're perfect."
 
                                 SuperClose ->
                                     "You get " ++ String.fromInt points ++ " points."
