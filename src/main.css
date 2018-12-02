@@ -143,6 +143,7 @@ input[type="range"] {
   background-color: white;
   z-index: 1;
   padding: 20px;
+  min-width: 330px;
 }
 
 .popup__container > div {
