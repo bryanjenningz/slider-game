@@ -2,7 +2,7 @@ port module Main exposing (main)
 
 import Browser
 import Html exposing (Attribute, Html, button, div, input, text)
-import Html.Attributes exposing (class, style, type_, value)
+import Html.Attributes exposing (attribute, class, style, type_, value)
 import Html.Events exposing (on, onClick)
 import Json.Decode as Decode exposing (Decoder)
 import Random
@@ -205,7 +205,13 @@ view model =
             , div [] [ text ("Oranges: " ++ String.fromInt model.orangeTokens) ]
             ]
         , div [ class "target-info" ] [ text ("Target: " ++ String.fromInt model.target) ]
-        , input [ type_ "range", value (String.fromInt model.slider), onSliderChange SetSlider ] []
+        , input
+            [ type_ "range"
+            , value (String.fromInt model.slider)
+            , onSliderChange SetSlider
+            , attribute "aria-label" "game slider"
+            ]
+            []
         , div [ onClick ShowResults, class "show-results__button" ] [ text "GO!" ]
         , case model.popup of
             NotShown ->
