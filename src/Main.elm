@@ -3,7 +3,7 @@ port module Main exposing (main)
 import Browser
 import Html exposing (Attribute, Html, button, div, input, text)
 import Html.Attributes exposing (class, style, type_, value)
-import Html.Events exposing (onClick, onMouseDown, onMouseLeave, onMouseOver, onMouseUp)
+import Html.Events exposing (on, onClick)
 import Json.Decode as Decode exposing (Decoder)
 import Random
 
@@ -32,7 +32,7 @@ type alias Model =
 init : ( Model, Cmd Msg )
 init =
     ( { slider = 50
-      , target = 1
+      , target = 0
       , score = 0
       , orangeTokens = 0
       , closenessHistory = []
@@ -80,7 +80,7 @@ playClosenessSound closeness =
 
 generateRandomTarget : Cmd Msg
 generateRandomTarget =
-    Random.generate SetTarget (Random.int 1 100)
+    Random.generate SetTarget (Random.int 0 100)
 
 
 sliderValueDecoder : Decoder Int
@@ -89,15 +89,18 @@ sliderValueDecoder =
         |> Decode.map (String.toInt >> Maybe.withDefault 0)
 
 
+onSliderChange : (Int -> msg) -> Attribute msg
+onSliderChange toMsg =
+    on "change" (Decode.map toMsg sliderValueDecoder)
+
+
 
 ---- UPDATE ----
 
 
 type Msg
     = SetTarget Int
-    | MouseDownSlider
-    | MouseUpSlider
-    | MouseMoveSlider Int
+    | SetSlider Int
     | ShowResults
     | NextLevel
     | Cry
@@ -119,18 +122,8 @@ update msg model =
         SetTarget target ->
             ( { model | target = target }, Cmd.none )
 
-        MouseDownSlider ->
-            ( { model | isSliderMouseDown = True }, Cmd.none )
-
-        MouseUpSlider ->
-            ( { model | isSliderMouseDown = False }, Cmd.none )
-
-        MouseMoveSlider slider ->
-            if model.isSliderMouseDown then
-                ( { model | slider = slider }, Cmd.none )
-
-            else
-                ( model, Cmd.none )
+        SetSlider slider ->
+            ( { model | slider = slider }, Cmd.none )
 
         ShowResults ->
             let
@@ -203,20 +196,6 @@ getPointsAndCloseness model =
     { points = points, closeness = closeness }
 
 
-viewSlider : Int -> Html Msg
-viewSlider slider =
-    div [ class "slider__container" ]
-        [ div
-            [ class "slider__point"
-            , style "left" (String.fromInt (slider - 1) ++ "%")
-            , onMouseDown MouseDownSlider
-            , onMouseUp MouseUpSlider
-            , onMouseLeave MouseUpSlider
-            ]
-            []
-        ]
-
-
 view : Model -> Html Msg
 view model =
     div [ class "container" ]
@@ -226,7 +205,7 @@ view model =
             , div [] [ text ("Oranges: " ++ String.fromInt model.orangeTokens) ]
             ]
         , div [ class "target-info" ] [ text ("Target: " ++ String.fromInt model.target) ]
-        , viewSlider model.slider
+        , input [ type_ "range", value (String.fromInt model.slider), onSliderChange SetSlider ] []
         , div [ onClick ShowResults, class "show-results__button" ] [ text "GO!" ]
         , case model.popup of
             NotShown ->
@@ -287,6 +266,7 @@ view model =
                                     SuperFar ->
                                         "You're so far away that I'm giving you 0 points and I'm going to force you to take a 10 minute break."
                             ]
+                        , div [] [ text ("You hit " ++ String.fromInt model.slider) ]
                         , div [ class "popup__button-container" ]
                             [ div [ onClick NextLevel, class "popup__ok-button" ] [ text "OK" ]
                             , if closeness == Far || closeness == SuperFar then
