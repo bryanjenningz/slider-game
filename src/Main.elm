@@ -33,29 +33,37 @@ type alias Model =
 init : Value -> ( Model, Cmd Msg )
 init savedDataValue =
     let
-        firstTimeTarget =
-            -1
-
-        { score, orangeTokens, level, target } =
+        maybeSavedData =
             Decode.decodeValue Decode.string savedDataValue
                 |> Result.andThen (Decode.decodeString savedDataDecoder)
-                |> Result.withDefault { score = 0, orangeTokens = 0, level = 1, target = firstTimeTarget }
+                |> Result.toMaybe
     in
-    ( { slider = 50
-      , target = target
-      , score = score
-      , orangeTokens = orangeTokens
-      , closenessHistory = []
-      , level = level
-      , popup = NotShown
-      , isSliderMouseDown = False
-      }
-    , if target == firstTimeTarget then
-        generateRandomTarget
+    case maybeSavedData of
+        Just savedData ->
+            ( { slider = 50
+              , target = savedData.target
+              , score = savedData.score
+              , orangeTokens = savedData.orangeTokens
+              , closenessHistory = []
+              , level = savedData.level
+              , popup = NotShown
+              , isSliderMouseDown = False
+              }
+            , Cmd.none
+            )
 
-      else
-        Cmd.none
-    )
+        Nothing ->
+            ( { slider = 50
+              , target = 0
+              , score = 0
+              , orangeTokens = 0
+              , closenessHistory = []
+              , level = 1
+              , popup = NotShown
+              , isSliderMouseDown = False
+              }
+            , generateRandomTarget
+            )
 
 
 type alias SavedData =
