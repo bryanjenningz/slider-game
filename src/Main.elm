@@ -17,6 +17,7 @@ type Popup
     | ResultsPopup
     | InfoPopup
     | OrangeTokenPopup
+    | ClearDataPopup
 
 
 type alias Model =
@@ -31,6 +32,19 @@ type alias Model =
     }
 
 
+defaultModel : Model
+defaultModel =
+    { slider = 50
+    , target = 0
+    , score = 0
+    , orangeTokens = 0
+    , closenessHistory = []
+    , level = 1
+    , popup = NotShown
+    , isSliderMouseDown = False
+    }
+
+
 init : Value -> ( Model, Cmd Msg )
 init savedDataValue =
     let
@@ -41,30 +55,17 @@ init savedDataValue =
     in
     case maybeSavedData of
         Just savedData ->
-            ( { slider = 50
-              , target = savedData.target
-              , score = savedData.score
-              , orangeTokens = savedData.orangeTokens
-              , closenessHistory = []
-              , level = savedData.level
-              , popup = NotShown
-              , isSliderMouseDown = False
+            ( { defaultModel
+                | target = savedData.target
+                , score = savedData.score
+                , orangeTokens = savedData.orangeTokens
+                , level = savedData.level
               }
             , Cmd.none
             )
 
         Nothing ->
-            ( { slider = 50
-              , target = 0
-              , score = 0
-              , orangeTokens = 0
-              , closenessHistory = []
-              , level = 1
-              , popup = NotShown
-              , isSliderMouseDown = False
-              }
-            , generateRandomTarget
-            )
+            ( defaultModel, generateRandomTarget )
 
 
 type alias SavedData =
@@ -150,6 +151,8 @@ type Msg
     | ClosePopup
     | ShowOrangeTokenPopup
     | ClearOrangeTokens
+    | ShowClearDataPopup
+    | ClearAllData
 
 
 type Closeness
@@ -224,6 +227,12 @@ update msg model =
         ClearOrangeTokens ->
             ( { model | orangeTokens = 0 }, Cmd.none )
 
+        ShowClearDataPopup ->
+            ( { model | popup = ClearDataPopup }, Cmd.none )
+
+        ClearAllData ->
+            ( defaultModel, generateRandomTarget )
+
 
 
 ---- VIEW ----
@@ -266,8 +275,8 @@ view : Model -> Html Msg
 view model =
     div [ class "container" ]
         [ div [ class "top-bar" ]
-            [ div [] [ text ("Level: " ++ String.fromInt model.level) ]
-            , div [] [ text ("Score: " ++ String.fromInt model.score) ]
+            [ div [ onClick ShowClearDataPopup ] [ text ("Level: " ++ String.fromInt model.level) ]
+            , div [ onClick ShowClearDataPopup ] [ text ("Score: " ++ String.fromInt model.score) ]
             , div [ onClick ShowOrangeTokenPopup ] [ text ("🍊: " ++ String.fromInt model.orangeTokens) ]
             , div [ onClick ShowInfo ] [ div [ class "top-bar__info" ] [ text "?" ] ]
             ]
@@ -371,6 +380,18 @@ view model =
                         , div [] [ text "WARNING! Take a screenshot of the orange token count before clicking the TRADE IN ORANGE TOKENS button." ]
                         , div [] [ text ("Orange token count: " ++ String.fromInt model.orangeTokens) ]
                         , div [ onClick ClearOrangeTokens, class "popup__ok-button" ] [ text "TRADE IN ORANGE TOKENS" ]
+                        , div [ onClick ClosePopup, class "popup__ok-button" ] [ text "CANCEL" ]
+                        ]
+                    ]
+
+            ClearDataPopup ->
+                div [ class "popup__background" ]
+                    [ div [ class "popup__container" ]
+                        [ div [ style "font-size" "30px" ] [ text "Clear All Data?" ]
+                        , div [] [ text ("Level: " ++ String.fromInt model.level) ]
+                        , div [] [ text ("Score: " ++ String.fromInt model.score) ]
+                        , div [] [ text ("Orange token count: " ++ String.fromInt model.orangeTokens) ]
+                        , div [ onClick ClearAllData, class "popup__ok-button" ] [ text "CLEAR ALL DATA" ]
                         , div [ onClick ClosePopup, class "popup__ok-button" ] [ text "CANCEL" ]
                         ]
                     ]
