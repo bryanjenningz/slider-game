@@ -36,6 +36,20 @@ body {
 
 .top-bar > div {
   flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.top-bar__info {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: white;
+  color: #3f51b5;
+  border-radius: 100%;
+  cursor: pointer;
 }
 
 .target-info {

@@ -14,7 +14,8 @@ import Random
 
 type Popup
     = NotShown
-    | Shown
+    | ResultsPopup
+    | InfoPopup
 
 
 type alias Model =
@@ -104,6 +105,8 @@ type Msg
     | ShowResults
     | NextLevel
     | Cry
+    | ShowInfo
+    | CloseInfo
 
 
 type Closeness
@@ -130,7 +133,7 @@ update msg model =
                 { closeness } =
                     getPointsAndCloseness model
             in
-            ( { model | popup = Shown }, playClosenessSound closeness )
+            ( { model | popup = ResultsPopup }, playClosenessSound closeness )
 
         NextLevel ->
             let
@@ -158,6 +161,12 @@ update msg model =
 
         Cry ->
             ( model, playSound "cry.m4a" )
+
+        ShowInfo ->
+            ( { model | popup = InfoPopup }, Cmd.none )
+
+        CloseInfo ->
+            ( { model | popup = NotShown }, Cmd.none )
 
 
 
@@ -202,7 +211,8 @@ view model =
         [ div [ class "top-bar" ]
             [ div [] [ text ("Level: " ++ String.fromInt model.level) ]
             , div [] [ text ("Score: " ++ String.fromInt model.score) ]
-            , div [] [ text ("Oranges: " ++ String.fromInt model.orangeTokens) ]
+            , div [] [ text ("🍊: " ++ String.fromInt model.orangeTokens) ]
+            , div [] [ div [ onClick ShowInfo, class "top-bar__info" ] [ text "?" ] ]
             ]
         , div [ class "target-info" ] [ text ("Target: " ++ String.fromInt model.target) ]
         , input
@@ -217,7 +227,7 @@ view model =
             NotShown ->
                 text ""
 
-            Shown ->
+            ResultsPopup ->
                 let
                     { points, closeness } =
                         getPointsAndCloseness model
@@ -281,6 +291,18 @@ view model =
                               else
                                 text ""
                             ]
+                        ]
+                    ]
+
+            InfoPopup ->
+                div [ class "popup__background" ]
+                    [ div [ class "popup__container" ]
+                        [ div [ style "font-size" "30px" ] [ text "Game instructions" ]
+                        , div [] [ text "You're given a randomly generated target value between 0 and 100." ]
+                        , div [] [ text "You also have a slider that goes from 0 to 100." ]
+                        , div [] [ text "Try to get the slider's value as close to the target value as possible!" ]
+                        , div [] [ text "If you get 3 perfects in a row, you get a free Orange!" ]
+                        , div [ onClick CloseInfo, class "popup__ok-button" ] [ text "OK" ]
                         ]
                     ]
         ]
