@@ -30,12 +30,16 @@ type alias Model =
     }
 
 
-init : String -> ( Model, Cmd Msg )
-init savedDataString =
+init : Value -> ( Model, Cmd Msg )
+init savedDataValue =
     let
+        firstTimeTarget =
+            -1
+
         { score, orangeTokens, level, target } =
-            Decode.decodeString savedDataDecoder savedDataString
-                |> Result.withDefault { score = 0, orangeTokens = 0, level = 1, target = 0 }
+            Decode.decodeValue Decode.string savedDataValue
+                |> Result.andThen (Decode.decodeString savedDataDecoder)
+                |> Result.withDefault { score = 0, orangeTokens = 0, level = 1, target = firstTimeTarget }
     in
     ( { slider = 50
       , target = target
@@ -46,7 +50,7 @@ init savedDataString =
       , popup = NotShown
       , isSliderMouseDown = False
       }
-    , if target == 0 then
+    , if target == firstTimeTarget then
         generateRandomTarget
 
       else
@@ -349,7 +353,7 @@ view model =
 ---- PROGRAM ----
 
 
-main : Program String Model Msg
+main : Program Value Model Msg
 main =
     Browser.element
         { view = view
