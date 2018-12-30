@@ -2,7 +2,7 @@ port module Main exposing (main)
 
 import Browser
 import Html exposing (Attribute, Html, button, div, input, text)
-import Html.Attributes exposing (attribute, class, style, type_, value)
+import Html.Attributes exposing (attribute, class, step, style, type_, value)
 import Html.Events exposing (on, onClick)
 import Json.Decode as Decode exposing (Decoder)
 import Random
@@ -19,7 +19,7 @@ type Popup
 
 
 type alias Model =
-    { slider : Int
+    { slider : Float
     , target : Int
     , score : Int
     , orangeTokens : Int
@@ -84,13 +84,13 @@ generateRandomTarget =
     Random.generate SetTarget (Random.int 0 100)
 
 
-sliderValueDecoder : Decoder Int
+sliderValueDecoder : Decoder Float
 sliderValueDecoder =
     Decode.at [ "target", "value" ] Decode.string
-        |> Decode.map (String.toInt >> Maybe.withDefault 0)
+        |> Decode.map (String.toFloat >> Maybe.withDefault 0)
 
 
-onSliderChange : (Int -> msg) -> Attribute msg
+onSliderChange : (Float -> msg) -> Attribute msg
 onSliderChange toMsg =
     on "change" (Decode.map toMsg sliderValueDecoder)
 
@@ -101,7 +101,7 @@ onSliderChange toMsg =
 
 type Msg
     = SetTarget Int
-    | SetSlider Int
+    | SetSlider Float
     | ShowResults
     | NextLevel
     | Cry
@@ -173,10 +173,11 @@ update msg model =
 ---- VIEW ----
 
 
+getPointsAndCloseness : Model -> { points : Int, closeness : Closeness }
 getPointsAndCloseness model =
     let
         sliderDifference =
-            abs (model.slider - model.target)
+            abs (round model.slider - model.target)
 
         ( points, closeness ) =
             if sliderDifference == 0 then
@@ -217,9 +218,10 @@ view model =
         , div [ class "target-info" ] [ text ("Target: " ++ String.fromInt model.target) ]
         , input
             [ type_ "range"
-            , value (String.fromInt model.slider)
+            , value (String.fromFloat model.slider)
             , onSliderChange SetSlider
             , attribute "aria-label" "game slider"
+            , step "0.01"
             ]
             []
         , div [ onClick ShowResults, class "show-results__button" ] [ text "GO!" ]
@@ -282,7 +284,7 @@ view model =
                                     SuperFar ->
                                         "You're so far away that I'm giving you 0 points and I'm going to force you to take a 10 minute break."
                             ]
-                        , div [] [ text ("You hit " ++ String.fromInt model.slider) ]
+                        , div [] [ text ("You hit " ++ (String.fromInt << round) model.slider) ]
                         , div [ class "popup__button-container" ]
                             [ div [ onClick NextLevel, class "popup__ok-button" ] [ text "OK" ]
                             , if closeness == Far || closeness == SuperFar then
