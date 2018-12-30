@@ -225,7 +225,7 @@ update msg model =
             ( { model | popup = OrangeTokenPopup }, Cmd.none )
 
         ClearOrangeTokens ->
-            ( { model | orangeTokens = 0 }, Cmd.none )
+            ( { model | orangeTokens = 0, popup = NotShown }, Cmd.none )
 
         ShowClearDataPopup ->
             ( { model | popup = ClearDataPopup }, Cmd.none )
@@ -376,12 +376,20 @@ view model =
             OrangeTokenPopup ->
                 div [ class "popup__background" ]
                     [ div [ class "popup__container" ]
-                        [ div [ style "font-size" "30px" ] [ text "Trade in Orange Tokens" ]
-                        , div [] [ text "WARNING! Take a screenshot of the orange token count before clicking the TRADE IN ORANGE TOKENS button." ]
-                        , div [] [ text ("Orange token count: " ++ String.fromInt model.orangeTokens) ]
-                        , div [ onClick ClearOrangeTokens, class "popup__ok-button" ] [ text "TRADE IN ORANGE TOKENS" ]
-                        , div [ onClick ClosePopup, class "popup__ok-button" ] [ text "CANCEL" ]
-                        ]
+                        (if model.orangeTokens > 0 then
+                            [ div [ style "font-size" "30px" ] [ text "Trade in Orange Tokens" ]
+                            , div [] [ text ("Orange token count: " ++ String.fromInt model.orangeTokens) ]
+                            , div [ onClick ClearOrangeTokens, class "popup__ok-button" ] [ text "TRADE IN ORANGE TOKENS" ]
+                            , div [ onClick ClosePopup, class "popup__ok-button" ] [ text "CANCEL" ]
+                            ]
+
+                         else
+                            [ div [ style "font-size" "30px" ] [ text "Trade in Orange Tokens" ]
+                            , div [] [ text "You don't have any orange tokens..." ]
+                            , div [] [ text "Get 3 perfects in a row and then you'll get an orange token." ]
+                            , div [ onClick ClosePopup, class "popup__ok-button" ] [ text "OK" ]
+                            ]
+                        )
                     ]
 
             ClearDataPopup ->
