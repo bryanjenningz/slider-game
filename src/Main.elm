@@ -4,7 +4,7 @@ import Browser
 import Html exposing (Attribute, Html, button, div, input, text)
 import Html.Attributes exposing (attribute, class, step, style, type_, value)
 import Html.Events exposing (on, onClick)
-import Json.Decode as Decode exposing (Decoder)
+import Json.Decode as Decode exposing (Decoder, Value)
 import Random
 
 
@@ -30,14 +30,19 @@ type alias Model =
     }
 
 
-init : ( Model, Cmd Msg )
-init =
+init : String -> ( Model, Cmd Msg )
+init savedDataString =
+    let
+        { score, orangeTokens, level } =
+            Decode.decodeString savedDataDecoder savedDataString
+                |> Result.withDefault { score = 0, orangeTokens = 0, level = 1 }
+    in
     ( { slider = 50
       , target = 0
-      , score = 0
-      , orangeTokens = 0
+      , score = score
+      , orangeTokens = orangeTokens
       , closenessHistory = []
-      , level = 1
+      , level = level
       , popup = NotShown
       , isSliderMouseDown = False
       }
@@ -45,38 +50,55 @@ init =
     )
 
 
+type alias SavedData =
+    { score : Int
+    , orangeTokens : Int
+    , level : Int
+    }
+
+
+savedDataDecoder : Decoder SavedData
+savedDataDecoder =
+    Decode.map3 SavedData
+        (Decode.field "score" Decode.int)
+        (Decode.field "orangeTokens" Decode.int)
+        (Decode.field "level" Decode.int)
+
+
+port saveData : SavedData -> Cmd msg
+
+
 port playSound : String -> Cmd msg
+
+
+closenessToString : Closeness -> String
+closenessToString closeness =
+    case closeness of
+        TriplePerfect ->
+            "triple-perfect"
+
+        DoublePerfect ->
+            "double-perfect"
+
+        Perfect ->
+            "perfect"
+
+        SuperClose ->
+            "super-close"
+
+        Close ->
+            "close"
+
+        Far ->
+            "far"
+
+        SuperFar ->
+            "super-far"
 
 
 playClosenessSound : Closeness -> Cmd Msg
 playClosenessSound closeness =
-    let
-        soundFile =
-            (case closeness of
-                TriplePerfect ->
-                    "triple-perfect"
-
-                DoublePerfect ->
-                    "double-perfect"
-
-                Perfect ->
-                    "perfect"
-
-                SuperClose ->
-                    "super-close"
-
-                Close ->
-                    "close"
-
-                Far ->
-                    "far"
-
-                SuperFar ->
-                    "super-far"
-            )
-                ++ ".m4a"
-    in
-    playSound soundFile
+    playSound (closenessToString closeness ++ ".m4a")
 
 
 generateRandomTarget : Cmd Msg
@@ -139,13 +161,14 @@ update msg model =
             let
                 { points, closeness } =
                     getPointsAndCloseness model
-            in
-            ( { model
-                | slider = 50
-                , level = model.level + 1
-                , popup = NotShown
-                , score = model.score + points
-                , orangeTokens =
+
+                newLevel =
+                    model.level + 1
+
+                newScore =
+                    model.score + points
+
+                newOrangeTokens =
                     model.orangeTokens
                         + (case closeness of
                             TriplePerfect ->
@@ -154,9 +177,19 @@ update msg model =
                             _ ->
                                 0
                           )
+            in
+            ( { model
+                | slider = 50
+                , level = newLevel
+                , popup = NotShown
+                , score = newScore
+                , orangeTokens = newOrangeTokens
                 , closenessHistory = closeness :: model.closenessHistory
               }
-            , generateRandomTarget
+            , Cmd.batch
+                [ generateRandomTarget
+                , saveData { level = newLevel, score = newScore, orangeTokens = newOrangeTokens }
+                ]
             )
 
         Cry ->
@@ -314,11 +347,11 @@ view model =
 ---- PROGRAM ----
 
 
-main : Program () Model Msg
+main : Program String Model Msg
 main =
     Browser.element
         { view = view
-        , init = \_ -> init
+        , init = init
         , update = update
         , subscriptions = always Sub.none
         }
