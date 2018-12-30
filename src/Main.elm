@@ -85,6 +85,21 @@ savedDataDecoder =
         (Decode.field "target" Decode.int)
 
 
+updateAndSaveData : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+updateAndSaveData ( model, cmd ) =
+    ( model
+    , Cmd.batch
+        [ cmd
+        , saveData
+            { score = model.score
+            , orangeTokens = model.orangeTokens
+            , level = model.level
+            , target = model.target
+            }
+        ]
+    )
+
+
 port saveData : SavedData -> Cmd msg
 
 
@@ -225,7 +240,8 @@ update msg model =
             ( { model | popup = OrangeTokenPopup }, Cmd.none )
 
         ClearOrangeTokens ->
-            ( { model | orangeTokens = 0, popup = NotShown }, Cmd.none )
+            updateAndSaveData
+                ( { model | orangeTokens = 0, popup = NotShown }, Cmd.none )
 
         ShowClearDataPopup ->
             ( { model | popup = ClearDataPopup }, Cmd.none )
