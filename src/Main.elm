@@ -33,12 +33,12 @@ type alias Model =
 init : String -> ( Model, Cmd Msg )
 init savedDataString =
     let
-        { score, orangeTokens, level } =
+        { score, orangeTokens, level, target } =
             Decode.decodeString savedDataDecoder savedDataString
-                |> Result.withDefault { score = 0, orangeTokens = 0, level = 1 }
+                |> Result.withDefault { score = 0, orangeTokens = 0, level = 1, target = 0 }
     in
     ( { slider = 50
-      , target = 0
+      , target = target
       , score = score
       , orangeTokens = orangeTokens
       , closenessHistory = []
@@ -46,7 +46,11 @@ init savedDataString =
       , popup = NotShown
       , isSliderMouseDown = False
       }
-    , generateRandomTarget
+    , if target == 0 then
+        generateRandomTarget
+
+      else
+        Cmd.none
     )
 
 
@@ -54,15 +58,17 @@ type alias SavedData =
     { score : Int
     , orangeTokens : Int
     , level : Int
+    , target : Int
     }
 
 
 savedDataDecoder : Decoder SavedData
 savedDataDecoder =
-    Decode.map3 SavedData
+    Decode.map4 SavedData
         (Decode.field "score" Decode.int)
         (Decode.field "orangeTokens" Decode.int)
         (Decode.field "level" Decode.int)
+        (Decode.field "target" Decode.int)
 
 
 port saveData : SavedData -> Cmd msg
@@ -144,8 +150,15 @@ type Closeness
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        SetTarget target ->
-            ( { model | target = target }, Cmd.none )
+        SetTarget newTarget ->
+            ( { model | target = newTarget }
+            , saveData
+                { level = model.level
+                , score = model.score
+                , orangeTokens = model.orangeTokens
+                , target = newTarget
+                }
+            )
 
         SetSlider slider ->
             ( { model | slider = slider }, Cmd.none )
@@ -161,14 +174,13 @@ update msg model =
             let
                 { points, closeness } =
                     getPointsAndCloseness model
-
-                newLevel =
-                    model.level + 1
-
-                newScore =
-                    model.score + points
-
-                newOrangeTokens =
+            in
+            ( { model
+                | slider = 50
+                , level = model.level + 1
+                , popup = NotShown
+                , score = model.score + points
+                , orangeTokens =
                     model.orangeTokens
                         + (case closeness of
                             TriplePerfect ->
@@ -177,19 +189,9 @@ update msg model =
                             _ ->
                                 0
                           )
-            in
-            ( { model
-                | slider = 50
-                , level = newLevel
-                , popup = NotShown
-                , score = newScore
-                , orangeTokens = newOrangeTokens
                 , closenessHistory = closeness :: model.closenessHistory
               }
-            , Cmd.batch
-                [ generateRandomTarget
-                , saveData { level = newLevel, score = newScore, orangeTokens = newOrangeTokens }
-                ]
+            , generateRandomTarget
             )
 
         Cry ->
