@@ -16,6 +16,7 @@ type Popup
     = NotShown
     | ResultsPopup
     | InfoPopup
+    | OrangeTokenPopup
 
 
 type alias Model =
@@ -146,7 +147,9 @@ type Msg
     | NextLevel
     | Cry
     | ShowInfo
-    | CloseInfo
+    | ClosePopup
+    | ShowOrangeTokenPopup
+    | ClearOrangeTokens
 
 
 type Closeness
@@ -212,8 +215,14 @@ update msg model =
         ShowInfo ->
             ( { model | popup = InfoPopup }, Cmd.none )
 
-        CloseInfo ->
+        ClosePopup ->
             ( { model | popup = NotShown }, Cmd.none )
+
+        ShowOrangeTokenPopup ->
+            ( { model | popup = OrangeTokenPopup }, Cmd.none )
+
+        ClearOrangeTokens ->
+            ( { model | orangeTokens = 0 }, Cmd.none )
 
 
 
@@ -259,8 +268,8 @@ view model =
         [ div [ class "top-bar" ]
             [ div [] [ text ("Level: " ++ String.fromInt model.level) ]
             , div [] [ text ("Score: " ++ String.fromInt model.score) ]
-            , div [] [ text ("🍊: " ++ String.fromInt model.orangeTokens) ]
-            , div [] [ div [ onClick ShowInfo, class "top-bar__info" ] [ text "?" ] ]
+            , div [ onClick ShowOrangeTokenPopup ] [ text ("🍊: " ++ String.fromInt model.orangeTokens) ]
+            , div [ onClick ShowInfo ] [ div [ class "top-bar__info" ] [ text "?" ] ]
             ]
         , div [ class "target-info" ] [ text ("Target: " ++ String.fromInt model.target) ]
         , input
@@ -351,7 +360,18 @@ view model =
                         , div [] [ text "You also have a slider that goes from 0 to 100." ]
                         , div [] [ text "Try to get the slider's value as close to the target value as possible!" ]
                         , div [] [ text "If you get 3 perfects in a row, you get a free Orange!" ]
-                        , div [ onClick CloseInfo, class "popup__ok-button" ] [ text "OK" ]
+                        , div [ onClick ClosePopup, class "popup__ok-button" ] [ text "OK" ]
+                        ]
+                    ]
+
+            OrangeTokenPopup ->
+                div [ class "popup__background" ]
+                    [ div [ class "popup__container" ]
+                        [ div [ style "font-size" "30px" ] [ text "Trade in Orange Tokens" ]
+                        , div [] [ text "WARNING! Take a screenshot of the orange token count before clicking the TRADE IN ORANGE TOKENS button." ]
+                        , div [] [ text ("Orange token count: " ++ String.fromInt model.orangeTokens) ]
+                        , div [ onClick ClearOrangeTokens, class "popup__ok-button" ] [ text "TRADE IN ORANGE TOKENS" ]
+                        , div [ onClick ClosePopup, class "popup__ok-button" ] [ text "CANCEL" ]
                         ]
                     ]
         ]
