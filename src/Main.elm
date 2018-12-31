@@ -62,6 +62,7 @@ init savedDataValue =
                 , score = savedData.score
                 , orangeTokens = savedData.orangeTokens
                 , level = savedData.level
+                , isMuted = savedData.isMuted
               }
             , Cmd.none
             )
@@ -75,20 +76,22 @@ type alias SavedData =
     , orangeTokens : Int
     , level : Int
     , target : Int
+    , isMuted : Bool
     }
 
 
 savedDataDecoder : Decoder SavedData
 savedDataDecoder =
-    Decode.map4 SavedData
+    Decode.map5 SavedData
         (Decode.field "score" Decode.int)
         (Decode.field "orangeTokens" Decode.int)
         (Decode.field "level" Decode.int)
         (Decode.field "target" Decode.int)
+        (Decode.field "isMuted" Decode.bool)
 
 
-updateAndSaveData : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-updateAndSaveData ( model, cmd ) =
+updateWithSaveData : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+updateWithSaveData ( model, cmd ) =
     ( model
     , Cmd.batch
         [ cmd
@@ -97,6 +100,7 @@ updateAndSaveData ( model, cmd ) =
             , orangeTokens = model.orangeTokens
             , level = model.level
             , target = model.target
+            , isMuted = model.isMuted
             }
         ]
     )
@@ -187,14 +191,11 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SetTarget newTarget ->
-            ( { model | target = newTarget }
-            , saveData
-                { level = model.level
-                , score = model.score
-                , orangeTokens = model.orangeTokens
-                , target = newTarget
-                }
-            )
+            let
+                newModel =
+                    { model | target = newTarget }
+            in
+            updateWithSaveData ( newModel, Cmd.none )
 
         SetSlider slider ->
             ( { model | slider = slider }, Cmd.none )
@@ -255,7 +256,7 @@ update msg model =
             ( { model | popup = OrangeTokenPopup }, Cmd.none )
 
         ClearOrangeTokens ->
-            updateAndSaveData
+            updateWithSaveData
                 ( { model | orangeTokens = 0, popup = NotShown }, Cmd.none )
 
         ShowClearDataPopup ->
