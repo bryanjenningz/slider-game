@@ -29,6 +29,7 @@ type alias Model =
     , level : Int
     , popup : Popup
     , isSliderMouseDown : Bool
+    , isMuted : Bool
     }
 
 
@@ -42,6 +43,7 @@ defaultModel =
     , level = 1
     , popup = NotShown
     , isSliderMouseDown = False
+    , isMuted = False
     }
 
 
@@ -168,6 +170,7 @@ type Msg
     | ClearOrangeTokens
     | ShowClearDataPopup
     | ClearAllData
+    | ToggleSound
 
 
 type Closeness
@@ -201,7 +204,13 @@ update msg model =
                 { closeness } =
                     getPointsAndCloseness model
             in
-            ( { model | popup = ResultsPopup }, playClosenessSound closeness )
+            ( { model | popup = ResultsPopup }
+            , if model.isMuted then
+                Cmd.none
+
+              else
+                playClosenessSound closeness
+            )
 
         NextLevel ->
             let
@@ -228,7 +237,13 @@ update msg model =
             )
 
         Cry ->
-            ( model, playSound "cry.m4a" )
+            ( model
+            , if model.isMuted then
+                Cmd.none
+
+              else
+                playSound "cry.m4a"
+            )
 
         ShowInfo ->
             ( { model | popup = InfoPopup }, Cmd.none )
@@ -247,7 +262,10 @@ update msg model =
             ( { model | popup = ClearDataPopup }, Cmd.none )
 
         ClearAllData ->
-            ( defaultModel, generateRandomTarget )
+            ( { defaultModel | isMuted = model.isMuted }, generateRandomTarget )
+
+        ToggleSound ->
+            ( { model | isMuted = not model.isMuted }, Cmd.none )
 
 
 
@@ -317,7 +335,16 @@ view model =
                 in
                 div [ class "popup__background" ]
                     [ div [ class "popup__container" ]
-                        [ div []
+                        [ div [ onClick ToggleSound, class "popup__audio-icon" ]
+                            [ text
+                                (if model.isMuted then
+                                    "🔇"
+
+                                 else
+                                    "🔊"
+                                )
+                            ]
+                        , div []
                             [ text <|
                                 case closeness of
                                     TriplePerfect ->

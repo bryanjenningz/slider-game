@@ -164,10 +164,19 @@ input[type="range"] {
   z-index: 1;
   padding: 20px;
   min-width: 330px;
+  position: relative;
 }
 
 .popup__container > div {
   margin: 20px 0;
+}
+
+.popup__audio-icon {
+  position: absolute;
+  top: 0;
+  right: 20px;
+  padding: 10px;
+  cursor: pointer;
 }
 
 .popup__button-container {
